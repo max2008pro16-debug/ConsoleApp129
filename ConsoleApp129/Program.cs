@@ -8,36 +8,36 @@ namespace ConsoleApp129
 {
     internal class Program
     {
+        // Точка входа в программу (метод Main)
         static void Main(string[] args)
         {
-            // нужен, чтобы символы корректно отображались в консоли
+            // Устанавливаем кодировку UTF-8, чтобы смайлики отображались корректно
             Console.OutputEncoding = Encoding.UTF8;
+            // Скрываем мигающий курсор в консоли для эстетики
             Console.CursorVisible = false;
 
-            Map map = new Map();
-            map.Map_generation();
+            Map map = new Map(); // Создаем экземпляр карты
+            map.Map_generation(); // Генерируем начальное расположение объектов
 
+            // Бесконечный игровой цикл
             while (true)
             {
-                Console.Clear();
-                map.Drawing_the_map();
+                Console.Clear(); // Очищаем консоль перед каждым кадром
+                map.Drawing_the_map(); // Отрисовываем актуальное состояние карты
 
-                Console.WriteLine();
-                Console.WriteLine("Стрелки - движение, Esc - выход");
+                Console.WriteLine("\nСтрелки - движение, Esc - выход");
+                ConsoleKeyInfo keyInfo = Console.ReadKey(true); // Ждем нажатия клавиши
 
-                ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+                // Если нажата клавиша Esc, выходим из цикла и завершаем программу
+                if (keyInfo.Key == ConsoleKey.Escape) break;
 
-                if (keyInfo.Key == ConsoleKey.Escape)
-                    break;
-
-                // 1) двигаем героя согласно нажатой клавише
+                // Сначала ходит игрок
                 map.MovePersons(keyInfo.Key);
-
-                // 2) двигаем врагов случайным образом
+                // Затем ходят враги
                 map.MovePersons();
             }
 
-            Console.CursorVisible = true;
+            Console.CursorVisible = true; // Возвращаем курсор обратно при выходе
         }
     }
 }
