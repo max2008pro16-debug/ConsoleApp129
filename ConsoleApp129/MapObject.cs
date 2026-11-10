@@ -8,43 +8,62 @@ namespace ConsoleApp129
 {
     // Абстрактный базовый класс для всех объектов на карте.
     // Задает общий интерфейс для отрисовки.
-    internal abstract class MapObject
+    /// Реализует принцип полиморфизма: каждый наследник определяет
+    /// своё визуальное представление.
+    public abstract class MapObject
     {
-        // Абстрактный метод, который обязан реализовать каждый наследник.
-        // Возвращает символ для отображения объекта в консоли.
-        public abstract char Rendering_on_the_map();
+        /// Возвращает символ и цвет для отрисовки объекта в консоли.
+        /// Возврат кортежа вместо установки цвета внутри метода позволяет
+        /// отделить логику объекта от побочных эффектов рендеринга
+        public abstract (char Symbol, ConsoleColor Color) Render();
     }
 
     // Класс, описывающий препятствие "Стена"
-    internal class Wall : MapObject
+    public class Wall : MapObject
     {
-        // Метод отрисовки стены. Красит символ в голубой цвет.
-        public override char Rendering_on_the_map()
-        {
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            return '+';
-        }
+        public override (char Symbol, ConsoleColor Color) Render()
+            => ('+', ConsoleColor.Cyan);
     }
 
     // Класс, описывающий свободную клетку "Поле"
-    internal class Field : MapObject
+    public class Field : MapObject
     {
-        // Метод отрисовки поля. Красит символ в темно-зеленый цвет.
-        public override char Rendering_on_the_map()
-        {
-            Console.ForegroundColor = ConsoleColor.DarkGreen;
-            return '.';
-        }
+        public override (char Symbol, ConsoleColor Color) Render()
+            => ('.', ConsoleColor.DarkGreen);
     }
 
     // Класс, описывающий препятствие "Дерево"
-    internal class Tree : MapObject
+    public class Tree : MapObject
     {
-        // Метод отрисовки дерева. Красит символ в зеленый цвет.
-        public override char Rendering_on_the_map()
+        public override (char Symbol, ConsoleColor Color) Render()
+            => ('T', ConsoleColor.Green);
+    }
+    /// «Лес» — новый тип объекта, введённый в ПР №2.
+    /// Отличается от одиночного дерева символом и цветом,
+    /// визуально обозначает густой лес.
+    public class Menu : MapObject
+    {
+        protected Menu()
         {
-            Console.ForegroundColor = ConsoleColor.Green;
-            return 'T';
+        }
+
+        public override (char Symbol, ConsoleColor Color) Render()
+            => ('♣', ConsoleColor.DarkGreen);
+    }
+    /// «Лес» — новый тип объекта
+    public class Forest : MapObject
+    {
+        public override (char Symbol, ConsoleColor Color) Render()
+        {
+            return ('♣', ConsoleColor.DarkGreen);
+        }
+    }
+    /// «Гора» — непроходимое препятствие
+    public class Mountain : MapObject
+    {
+        public override (char Symbol, ConsoleColor Color) Render()
+        {
+            return ('▲', ConsoleColor.Gray);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.SqlServer.Server;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,126 +7,196 @@ using System.Threading.Tasks;
 
 namespace ConsoleApp129
 {
-    // Класс, отвечающий за генерацию, отрисовку и логику карты
-    internal class Map
+    /// Класс карты: генерация (комнаты, леса, горы), отрисовка, движение.
+    public class Map
     {
-        // Генератор случайных чисел для расстановки объектов и движения врагов
-        Random rand = new Random();
+        private readonly Random _rand = new Random();
+        private MapObject[,] _map;
+        private int _width;
+        private int _height;
 
-        // Двумерный массив 25x25, хранящий все объекты на карте
-        MapObject[,] map = new MapObject[25, 25];
+        public int Width => _width;
+        public int Height => _height;
+        public MapObject[,] Cells => _map;
 
-        // Метод первичной генерации карты при запуске программы
-        public void Map_generation()
+        public void Generate(int width = 25, int height = 25)
         {
-            for (int i = 0; i < map.GetLength(0); i++)
+            _width = width;
+            _height = height;
+            _map = new MapObject[width, height];
+
+            for (int i = 0; i < width; i++)
+                for (int j = 0; j < height; j++)
+                    _map[i, j] = new Field();
+
+            GenerateRooms(min: 3, max: 5);
+            GenerateForests(min: 3, max: 5);
+            GenerateMountains(min: 2, max: 4);
+            GenerateEnemies(min: 10, max: 15);
+
+            int cx = _width / 2, cy = _height / 2;
+            _map[cx, cy] = new Hero(cx, cy);
+        }
+
+        private void GenerateRooms(int min, int max)
+        {
+            int count = _rand.Next(min, max + 1);
+            for (int k = 0; k < count; k++)
             {
-                for (int j = 0; j < map.GetLength(1); j++)
+                int roomW = _rand.Next(4, 9);
+                int roomH = _rand.Next(4, 9);
+                int startX = _rand.Next(1, _width - roomW - 1);
+                int startY = _rand.Next(1, _height - roomH - 1);
+
+                for (int i = startX; i < startX + roomW; i++)
+                    for (int j = startY; j < startY + roomH; j++)
+                        if (i == startX || i == startX + roomW - 1 ||
+                            j == startY || j == startY + roomH - 1)
+                            _map[i, j] = new Wall();
+
+                switch (_rand.Next(4))
                 {
-                    int A = rand.Next(100); // Генерируем число от 0 до 99
-                    map[i, j] = new Field(); // По умолчанию клетка пустая
-
-                    // Если выпало 2-5, ставим стену
-                    if (A > 1 && A < 6) map[i, j] = new Wall();
-                    // Если выпало 0, ставим врага
-                    if (A < 1) map[i, j] = new Enemy(i, j);
-                    // Если выпало 6-9, ставим дерево
-                    if (A > 5 && A < 10) map[i, j] = new Tree();
-
-                    // Принудительно ставим героя ровно по центру карты (12, 12)
-                    if (i == map.GetLength(0) / 2 && j == map.GetLength(1) / 2)
-                    {
-                        map[i, j] = new Hero(i, j);
-                    }
+                    case 0: _map[startX, startY + _rand.Next(1, roomH - 1)] = new Field(); break;
+                    case 1: _map[startX + roomW - 1, startY + _rand.Next(1, roomH - 1)] = new Field(); break;
+                    case 2: _map[startX + _rand.Next(1, roomW - 1), startY] = new Field(); break;
+                    case 3: _map[startX + _rand.Next(1, roomW - 1), startY + roomH - 1] = new Field(); break;
                 }
             }
         }
 
-        // Метод отрисовки всей карты в консоли
-        public void Drawing_the_map()
+        private void GenerateForests(int min, int max)
         {
-            for (int i = 0; i < map.GetLength(0); i++)
+            int count = _rand.Next(min, max + 1);
+            for (int k = 0; k < count; k++)
             {
-                for (int j = 0; j < map.GetLength(1); j++)
-                {
-                    // Получаем символ объекта и выводим его с пробелом
-                    Console.Write(map[i, j].Rendering_on_the_map() + " ");
-                    Console.ResetColor(); // Сбрасываем цвет для следующего символа
-                }
-                Console.WriteLine(); // Переход на новую строку после каждого ряда
-            }
-        }
-
-        // Метод для случайного перемещения врагов по карте
-        public void MovePersons()
-        {
-            // Создаем временную карту, чтобы избежать багов при одновременном движении
-            MapObject[,] newMap = new MapObject[map.GetLength(0), map.GetLength(1)];
-            Array.Copy(map, newMap, map.Length);
-
-            for (int i = 0; i < map.GetLength(0); i++)
-            {
-                for (int j = 0; j < map.GetLength(1); j++)
-                {
-                    if (map[i, j] is Enemy) // Ищем врагов на карте
+                int cx = _rand.Next(2, _width - 2);
+                int cy = _rand.Next(2, _height - 2);
+                int radius = _rand.Next(1, 3);
+                for (int dx = -radius; dx <= radius; dx++)
+                    for (int dy = -radius; dy <= radius; dy++)
                     {
-                        int direction = rand.Next(4); // Случайное направление (0-3)
-                        int newX = i, newY = j;
-
-                        // Вычисляем новые координаты в зависимости от направления
-                        switch (direction)
+                        int x = cx + dx, y = cy + dy;
+                        if (x > 0 && x < _width - 1 && y > 0 && y < _height - 1
+                            && _rand.Next(100) < 70 && _map[x, y] is Field)
                         {
-                            case 0: newX = (i - 1 + map.GetLength(0)) % map.GetLength(0); break; // Вверх
-                            case 1: newX = (i + 1) % map.GetLength(0); break; // Вниз
-                            case 2: newY = (j - 1 + map.GetLength(1)) % map.GetLength(1); break; // Влево
-                            case 3: newY = (j + 1) % map.GetLength(1); break; // Вправо
+                            _map[x, y] = new Forest();
                         }
+                    }
+            }
+        }
 
-                        // Если в новой клетке пусто (Field), враг туда перемещается
-                        if (newMap[newX, newY] is Field)
+        private void GenerateMountains(int min, int max)
+        {
+            int count = _rand.Next(min, max + 1);
+            for (int k = 0; k < count; k++)
+            {
+                int cx = _rand.Next(3, _width - 3);
+                int cy = _rand.Next(3, _height - 3);
+                int radius = _rand.Next(2, 4);
+                for (int dx = -radius; dx <= radius; dx++)
+                    for (int dy = -radius; dy <= radius; dy++)
+                    {
+                        int x = cx + dx, y = cy + dy;
+                        if (x > 0 && x < _width - 1 && y > 0 && y < _height - 1
+                            && Math.Abs(dx) + Math.Abs(dy) <= radius
+                            && _map[x, y] is Field)
+                            _map[x, y] = new Mountain();
+                    }
+            }
+        }
+
+        private void GenerateEnemies(int min, int max)
+        {
+            int count = _rand.Next(min, max + 1);
+            int placed = 0, attempts = 0;
+            while (placed < count && attempts < 1000)
+            {
+                attempts++;
+                int x = _rand.Next(_width);
+                int y = _rand.Next(_height);
+                if (_map[x, y] is Field)
+                {
+                    _map[x, y] = new Enemy(x, y);
+                    placed++;
+                }
+            }
+        }
+
+        public void Draw()
+        {
+            for (int i = 0; i < _width; i++)
+            {
+                for (int j = 0; j < _height; j++)
+                {
+                    var (sym, col) = _map[i, j].Render();
+                    Console.ForegroundColor = col;
+                    Console.Write(sym + " ");
+                    Console.ResetColor();
+                }
+                Console.WriteLine();
+            }
+        }
+
+        public void MoveEnemies()
+        {
+            var newMap = (MapObject[,])_map.Clone();
+
+            for (int i = 0; i < _width; i++)
+                for (int j = 0; j < _height; j++)
+                {
+                    if (_map[i, j] is Enemy)
+                    {
+                        int dir = _rand.Next(4);
+                        int nx = i, ny = j;
+                        switch (dir)
                         {
-                            newMap[newX, newY] = map[i, j];
+                            case 0: nx = (i - 1 + _width) % _width; break;
+                            case 1: nx = (i + 1) % _width; break;
+                            case 2: ny = (j - 1 + _height) % _height; break;
+                            case 3: ny = (j + 1) % _height; break;
+                        }
+                        if (newMap[nx, ny] is Field)
+                        {
+                            newMap[nx, ny] = _map[i, j];
                             newMap[i, j] = new Field();
                         }
                     }
                 }
-            }
-            Array.Copy(newMap, map, map.Length); // Применяем изменения
+            _map = newMap;
         }
 
-        // Перегруженный метод для перемещения Героя (управляется игроком)
-        public void MovePersons(ConsoleKey key)
+        public void MoveHero(ConsoleKey key)
         {
-            MapObject[,] newMap = new MapObject[map.GetLength(0), map.GetLength(1)];
-            Array.Copy(map, newMap, map.Length);
+            var newMap = (MapObject[,])_map.Clone();
 
-            for (int i = 0; i < map.GetLength(0); i++)
-            {
-                for (int j = 0; j < map.GetLength(1); j++)
+            for (int i = 0; i < _width; i++)
+                for (int j = 0; j < _height; j++)
                 {
-                    if (map[i, j] is Hero) // Ищем Героя на карте
+                    if (_map[i, j] is Hero)
                     {
-                        int newX = i, newY = j;
-
-                        // Меняем координаты в зависимости от нажатой стрелки
+                        int nx = i, ny = j;
                         switch (key)
                         {
-                            case ConsoleKey.UpArrow: newX = (i - 1 + map.GetLength(0)) % map.GetLength(0); break;
-                            case ConsoleKey.DownArrow: newX = (i + 1) % map.GetLength(0); break;
-                            case ConsoleKey.LeftArrow: newY = (j - 1 + map.GetLength(1)) % map.GetLength(1); break;
-                            case ConsoleKey.RightArrow: newY = (j + 1) % map.GetLength(1); break;
+                            case ConsoleKey.UpArrow: nx = (i - 1 + _width) % _width; break;
+                            case ConsoleKey.DownArrow: nx = (i + 1) % _width; break;
+                            case ConsoleKey.LeftArrow: ny = (j - 1 + _height) % _height; break;
+                            case ConsoleKey.RightArrow: ny = (j + 1) % _height; break;
                         }
-
-                        // Если клетка пустая (Field), перемещаем героя
-                        if (newMap[newX, newY] is Field)
+                        if (newMap[nx, ny] is Field)
                         {
-                            newMap[newX, newY] = map[i, j];
+                            newMap[nx, ny] = _map[i, j];
                             newMap[i, j] = new Field();
                         }
                     }
                 }
-            }
-            Array.Copy(newMap, map, map.Length);
+            _map = newMap;
+        }
+
+        public Hero FindHero()
+        {
+            foreach (var obj in _map)
+                if (obj is Hero h) return h;
+            return null;
         }
     }
 }

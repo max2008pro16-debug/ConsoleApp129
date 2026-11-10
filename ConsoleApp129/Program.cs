@@ -8,36 +8,89 @@ namespace ConsoleApp129
 {
     internal class Program
     {
-        // Точка входа в программу (метод Main)
-        static void Main(string[] args)
+        static void Main()
         {
-            // Устанавливаем кодировку UTF-8, чтобы смайлики отображались корректно
             Console.OutputEncoding = Encoding.UTF8;
-            // Скрываем мигающий курсор в консоли для эстетики
             Console.CursorVisible = false;
 
-            Map map = new Map(); // Создаем экземпляр карты
-            map.Map_generation(); // Генерируем начальное расположение объектов
-
-            // Бесконечный игровой цикл
             while (true)
             {
-                Console.Clear(); // Очищаем консоль перед каждым кадром
-                map.Drawing_the_map(); // Отрисовываем актуальное состояние карты
+                var mainMenu = new MainMenu();
+                var choice = mainMenu.GetChoice();
 
-                Console.WriteLine("\nСтрелки - движение, Esc - выход");
-                ConsoleKeyInfo keyInfo = Console.ReadKey(true); // Ждем нажатия клавиши
+                if (choice == MainMenu.Action.Exit) break;
 
-                // Если нажата клавиша Esc, выходим из цикла и завершаем программу
-                if (keyInfo.Key == ConsoleKey.Escape) break;
-
-                // Сначала ходит игрок
-                map.MovePersons(keyInfo.Key);
-                // Затем ходят враги
-                map.MovePersons();
+                if (choice == MainMenu.Action.NewGame)
+                {
+                    var map = new Map();
+                    map.Generate();
+                    GameLoop(map);
+                }
+                else if (choice == MainMenu.Action.Load)
+                {
+                    try
+                    {
+                        // var map = SaveManager.Load();
+                        // GameLoop(map);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Ошибка загрузки: {ex.Message}");
+                        Console.ReadKey(true);
+                    }
+                }
             }
 
-            Console.CursorVisible = true; // Возвращаем курсор обратно при выходе
+            Console.CursorVisible = true;
+        }
+
+        private static void GameLoop(Map map)
+        {
+            while (true)
+            {
+                Console.Clear();
+                map.Draw();
+                Console.WriteLine("\nСтрелки — движение, Esc — меню, C — персонаж");
+
+                var key = Console.ReadKey(true).Key;
+
+                if (key == ConsoleKey.Escape)
+                {
+                    var gm = new GameMenu();
+                    var act = gm.GetChoice();
+
+                    if (act == GameMenu.Action.Continue) continue;
+                    if (act == GameMenu.Action.ToMain) return;
+
+                    if (act == GameMenu.Action.Character)
+                    {
+                        var h = map.FindHero();
+                        // if (h != null) new CharacterMenu(h).Run();
+                        continue;
+                    }
+                    if (act == GameMenu.Action.Save)
+                    {
+                        // SaveManager.Save(map);
+                        continue;
+                    }
+                    if (act == GameMenu.Action.Load)
+                    {
+                        // map = SaveManager.Load();
+                        continue;
+                    }
+                    continue;
+                }
+
+                if (key == ConsoleKey.C)
+                {
+                    var h = map.FindHero();
+                    // if (h != null) new CharacterMenu(h).Run();
+                    continue;
+                }
+
+                map.MoveHero(key);
+                map.MoveEnemies();
+            }
         }
     }
 }

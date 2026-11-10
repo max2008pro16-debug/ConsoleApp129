@@ -6,59 +6,45 @@ using System.Threading.Tasks;
 
 namespace ConsoleApp129
 {
-    // Базовый класс для всех персонажей на карте (наследует MapObject)
-    internal class Person : MapObject
+    /// Базовый класс для всех персонажей (герой, враги).
+    /// Наследует MapObject, добавляя координаты и здоровье.
+
+    public class Person : MapObject
     {
-        // Приватные поля для хранения координат персонажа
-        int pointX;
-        int pointY;
+        public int X { get; set; }
+        public int Y { get; set; }
 
-        // Конструктор, принимающий начальные координаты X и Y
-        public Person(int X, int Y)
+        /// Здоровье персонажа 
+        public int Health { get; set; } = 100;
+
+        public Person(int x, int y)
         {
-            pointX = X;
-            pointY = Y;
+            X = x;
+            Y = y;
         }
 
-        // Метод отрисовки обычного персонажа (по умолчанию - врага).
-        // Возвращает символ смайлика.
-        public override char Rendering_on_the_map()
-        {
-            return '☺';
-        }
+        public override (char Symbol, ConsoleColor Color) Render()
+            => ('☺', ConsoleColor.Red);
     }
 
     // Класс Героя (наследуется от Person)
-    internal class Hero : Person
+    public class Hero : Person
     {
-        // Конструктор героя, вызывает конструктор базового класса Person
-        public Hero(int X, int Y) : base(X, Y)
-        {
-        }
+        /// Очки героя 
+        public int Score { get; set; } = 0;
 
-        // Переопределенный метод отрисовки героя.
-        // Задает желтый цвет и уникальный символ '☻'.
-        public override char Rendering_on_the_map()
-        {
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            return '☻';
-        }
+        public Hero(int x, int y) : base(x, y) { }
+
+        public override (char Symbol, ConsoleColor Color) Render()
+            => ('☻', ConsoleColor.Yellow);
     }
 
     // Класс Врага (наследуется от Person)
-    internal class Enemy : Person
+    public class Enemy : Person
     {
-        // Конструктор врага
-        public Enemy(int X, int Y) : base(X, Y)
-        {
-        }
+        public Enemy(int x, int y) : base(x, y) { }
 
-        // Переопределенный метод отрисовки врага.
-        // Красит стандартный смайлик в красный цвет.
-        public override char Rendering_on_the_map()
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            return base.Rendering_on_the_map();
-        }
+        public override (char Symbol, ConsoleColor Color) Render()
+            => ('☺', ConsoleColor.Red);
     }
 }
