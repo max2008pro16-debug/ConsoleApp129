@@ -1,9 +1,24 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.6.33723.286
+# Visual Studio Version 18
+VisualStudioVersion = 18.12.12405.243 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp129", "ConsoleApp129\ConsoleApp129.csproj", "{CB18C708-B725-42D1-856F-85B82A98B103}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Menus", "Menus", "{3116B920-8929-41E2-8862-14B29605165F}"
+	ProjectSection(SolutionItems) = preProject
+		ConsoleApp129\CharacterMenu.cs = ConsoleApp129\CharacterMenu.cs
+		ConsoleApp129\IMenu.cs = ConsoleApp129\IMenu.cs
+		ConsoleApp129\MainMenu.cs = ConsoleApp129\MainMenu.cs
+		ConsoleApp129\MenuItem.cs = ConsoleApp129\MenuItem.cs
+		ConsoleApp129\MenuManager.cs = ConsoleApp129\MenuManager.cs
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Service", "Service", "{78DF4773-8D4A-47AD-9896-DA5B4FEB7963}"
+	ProjectSection(SolutionItems) = preProject
+		ConsoleApp129\CharacterInteractionService.cs = ConsoleApp129\CharacterInteractionService.cs
+		ConsoleApp129\GameService.cs = ConsoleApp129\GameService.cs
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

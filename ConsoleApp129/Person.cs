@@ -1,43 +1,74 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ConsoleApp129
 {
-    // Базовый класс для всех персонажей на карте (наследует MapObject)
     internal class Person : MapObject
     {
-        // Приватные поля для хранения координат персонажа
-        int pointX;
-        int pointY;
+        private readonly int pointX;
+        private readonly int pointY;
 
-        // Конструктор, принимающий начальные координаты X и Y
-        public Person(int X, int Y)
+        public string Name { get; set; }
+        public int MaxHealth { get; }
+        public int Health { get; internal set; }
+
+        public bool IsAlive { get { return Health > 0; } }
+
+        protected Person(int x, int y, string name, int maxHealth, int? currentHealth = null)
         {
-            pointX = X;
-            pointY = Y;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("Имя персонажа не может быть пустым.", nameof(name));
+            }
+
+            if (maxHealth <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxHealth), "MaxHealth должен быть больше нуля.");
+            }
+
+            pointX = x;
+            pointY = y;
+            Name = name;
+            MaxHealth = maxHealth;
+
+            int hp = currentHealth ?? maxHealth;
+            Health = Math.Min(Math.Max(hp, 0), maxHealth);
         }
 
-        // Метод отрисовки обычного персонажа (по умолчанию - врага).
-        // Возвращает символ смайлика.
+        public void TakeDamage(int damage)
+        {
+            if (damage < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(damage), "Урон не может быть отрицательным.");
+            }
+
+            Health = Math.Max(0, Health - damage);
+        }
+
+        public void Heal(int amount)
+        {
+            if (amount < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(amount), "Лечение не может быть отрицательным.");
+            }
+
+            Health = Math.Min(MaxHealth, Health + amount);
+        }
+
         public override char Rendering_on_the_map()
         {
             return '☺';
         }
+
+        public override string ToString()
+        {
+            return string.Format("{0} (HP: {1}/{2})", Name, Health, MaxHealth);
+        }
     }
 
-    // Класс Героя (наследуется от Person)
     internal class Hero : Person
     {
-        // Конструктор героя, вызывает конструктор базового класса Person
-        public Hero(int X, int Y) : base(X, Y)
-        {
-        }
+        public Hero(int X, int Y) : base(X, Y, "Герой", 100) { }
 
-        // Переопределенный метод отрисовки героя.
-        // Задает желтый цвет и уникальный символ '☻'.
         public override char Rendering_on_the_map()
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
@@ -45,16 +76,12 @@ namespace ConsoleApp129
         }
     }
 
-    // Класс Врага (наследуется от Person)
     internal class Enemy : Person
     {
-        // Конструктор врага
-        public Enemy(int X, int Y) : base(X, Y)
-        {
-        }
+        private static int _counter;
 
-        // Переопределенный метод отрисовки врага.
-        // Красит стандартный смайлик в красный цвет.
+        public Enemy(int X, int Y) : base(X, Y, string.Format("Враг #{0}", ++_counter), 50) { }
+
         public override char Rendering_on_the_map()
         {
             Console.ForegroundColor = ConsoleColor.Red;
