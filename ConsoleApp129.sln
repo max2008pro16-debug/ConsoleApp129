@@ -20,6 +20,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Service", "Service", "{78DF
 		ConsoleApp129\GameService.cs = ConsoleApp129\GameService.cs
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SaveSystem", "SaveSystem", "{C8B2AE82-4EC6-43FA-91E0-EAE34532ACD2}"
+	ProjectSection(SolutionItems) = preProject
+		ConsoleApp129\ISaveService.cs = ConsoleApp129\ISaveService.cs
+		ConsoleApp129\JsonSaveService.cs = ConsoleApp129\JsonSaveService.cs
+		ConsoleApp129\SaveData.cs = ConsoleApp129\SaveData.cs
+		ConsoleApp129\SaveServiceFactory.cs = ConsoleApp129\SaveServiceFactory.cs
+		ConsoleApp129\XmlSaveService.cs = ConsoleApp129\XmlSaveService.cs
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ConsoleApp129.SaveSystem;
 
 namespace ConsoleApp129
 {
-    internal class Map
+    public class Map
     {
         Random rand = new Random();
         MapObject[,] map = new MapObject[25, 25];
@@ -108,7 +109,7 @@ namespace ConsoleApp129
             Array.Copy(newMap, map, map.Length);
         }
 
-        public IReadOnlyList<Person> GetAllPersons()
+        internal IReadOnlyList<Person> GetAllPersons()
         {
             var persons = new List<Person>();
             for (int i = 0; i < map.GetLength(0); i++)
@@ -138,5 +139,70 @@ namespace ConsoleApp129
                 }
             }
         }
+        public SaveData ToSaveData()
+        {
+            var data = new SaveData();
+            data.SavedAtUtc = DateTime.UtcNow;
+            data.Width = map.GetLength(0);
+            data.Height = map.GetLength(1);
+
+            for (int i = 0; i < map.GetLength(0); i++)
+            {
+                for (int j = 0; j < map.GetLength(1); j++)
+                {
+                    var cell = new MapCellSaveData { X = i, Y = j };
+
+                    if (map[i, j] is Hero)
+                    {
+                        cell.Type = "Hero";
+                        cell.Person = ToPersonData((Person)map[i, j]);
+                    }
+                    else if (map[i, j] is Enemy)
+                    {
+                        cell.Type = "Enemy";
+                        cell.Person = ToPersonData((Person)map[i, j]);
+                    }
+                    else if (map[i, j] is Wall) cell.Type = "Wall";
+                    else if (map[i, j] is Tree) cell.Type = "Tree";
+                    else cell.Type = "Field";
+
+                    data.Cells.Add(cell);
+                }
+            }
+            return data;
+        }
+
+        public void LoadFromSaveData(SaveData data)
+        {
+            if (data == null) throw new ArgumentNullException(nameof(data));
+            map = new MapObject[data.Width, data.Height];
+
+            foreach (var cell in data.Cells)
+            {
+                switch (cell.Type)
+                {
+                    case "Wall": map[cell.X, cell.Y] = new Wall(); break;
+                    case "Tree": map[cell.X, cell.Y] = new Tree(); break;
+                    case "Hero": map[cell.X, cell.Y] = new Hero(cell.X, cell.Y); break;
+                    case "Enemy":
+                        if (cell.Person != null)
+                        {
+                            var enemy = new Enemy(cell.X, cell.Y);
+                            enemy.Health = cell.Person.Health;
+                            enemy.Name = cell.Person.Name;
+                            map[cell.X, cell.Y] = enemy;
+                        }
+                        else map[cell.X, cell.Y] = new Enemy(cell.X, cell.Y);
+                        break;
+                    default: map[cell.X, cell.Y] = new Field(); break;
+                }
+            }
+        }
+
+        private static PersonSaveData ToPersonData(Person person)
+        {
+            return new PersonSaveData { Name = person.Name, Health = person.Health, MaxHealth = person.MaxHealth };
+        }
     }
+
 }

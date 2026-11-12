@@ -1,10 +1,11 @@
-﻿using System;
+﻿using ConsoleApp129.Core;
+using ConsoleApp129.Menus;
+using ConsoleApp129.SaveSystem;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ConsoleApp129.Core;
-using ConsoleApp129.Menus;
 
 namespace ConsoleApp129.Services
 {
@@ -51,6 +52,11 @@ namespace ConsoleApp129.Services
                 CurrentMap.MovePersons(keyInfo.Key);
                 CurrentMap.MovePersons();
             }
+        }
+        public void SetMap(Map map)
+        {
+            if (map == null) throw new ArgumentNullException(nameof(map));
+            CurrentMap = map;
         }
     }
 }
