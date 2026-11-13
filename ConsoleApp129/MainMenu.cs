@@ -1,25 +1,17 @@
-﻿using ConsoleApp129.Menus;
-using ConsoleApp129.SaveSystem;
+﻿using ConsoleApp129.SaveSystem;
 using ConsoleApp129.Services;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace ConsoleApp129.Menus
 {
     internal sealed class MainMenu : IMenu
     {
-        private const string JsonPath = "savegame.json";
-        private const string XmlPath = "savegame.xml";
+        private const string SavePath = "savegame.json";
 
         private readonly MenuManager _manager;
         private readonly GameService _gameService;
         private readonly CharacterMenu _characterMenu;
-        private readonly ISaveService _jsonService;
-        private readonly ISaveService _xmlService;
+        private readonly ISaveService _saveService;
 
         public string Title { get { return "Главное меню игры"; } }
 
@@ -27,17 +19,15 @@ namespace ConsoleApp129.Menus
         {
             _gameService = gameService;
             _characterMenu = characterMenu;
-            _jsonService = SaveServiceFactory.Create(SaveFormat.Json);
-            _xmlService = SaveServiceFactory.Create(SaveFormat.Xml);
+
+            _saveService = SaveServiceFactory.Create(SaveFormat.Json);
 
             _manager = new MenuManager(Title, new[]
             {
                 new MenuItem("Новая игра", StartNewGame),
-                new MenuItem("Загрузить игру (JSON)", LoadJson),
-                new MenuItem("Загрузить игру (XML)", LoadXml),
+                new MenuItem("Загрузить игру", LoadGame),
                 new MenuItem("Меню персонажей", ShowCharacterMenu),
-                new MenuItem("Сохранить игру (JSON)", SaveJson),
-                new MenuItem("Сохранить игру (XML)", SaveXml),
+                new MenuItem("Сохранить игру", SaveGame),
                 new MenuItem("О программе", ShowAbout)
             });
         }
@@ -56,32 +46,33 @@ namespace ConsoleApp129.Menus
             else Console.WriteLine("Нет активной игры.");
         }
 
-        private void SaveJson() { SaveGame(_jsonService, JsonPath); }
-        private void SaveXml() { SaveGame(_xmlService, XmlPath); }
-        private void LoadJson() { LoadGame(_jsonService, JsonPath); }
-        private void LoadXml() { LoadGame(_xmlService, XmlPath); }
-
-        private void SaveGame(ISaveService saveService, string path)
+        private void SaveGame()
         {
-            if (!_gameService.IsGameActive) { Console.WriteLine("Нет игры для сохранения."); return; }
+            if (!_gameService.IsGameActive)
+            {
+                Console.WriteLine("Нет игры для сохранения.");
+                return;
+            }
+
             var data = _gameService.CurrentMap.ToSaveData();
-            saveService.Save(data, path);
-            Console.WriteLine("Игра сохранена: " + Path.GetFullPath(path));
+            _saveService.Save(data, SavePath);
+            Console.WriteLine("Игра сохранена: " + Path.GetFullPath(SavePath));
         }
 
-        private void LoadGame(ISaveService saveService, string path)
+        private void LoadGame()
         {
-            var data = saveService.Load(path);
+            var data = _saveService.Load(SavePath);
             var map = new Map();
             map.LoadFromSaveData(data);
             _gameService.SetMap(map);
-            Console.WriteLine("Игра загружена: " + Path.GetFullPath(path));
+
+            Console.WriteLine("Игра загружена: " + Path.GetFullPath(SavePath));
             _gameService.RunGameLoop(_characterMenu);
         }
 
         private static void ShowAbout()
         {
-            Console.WriteLine("Учебный проект: меню игры, персонажи и сохранения JSON/XML.");
+            Console.WriteLine("Учебный проект: меню игры, персонажи и сохранения JSON.");
             Console.WriteLine("Практическая работа №3, МДК.03.01.");
         }
     }

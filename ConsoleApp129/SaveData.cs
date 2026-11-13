@@ -1,38 +1,39 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.Serialization;
 
 namespace ConsoleApp129.SaveSystem
 {
-    internal enum SaveFormat { Json, Xml }
+    internal enum SaveFormat { Json }
 
+    [DataContract]
     public sealed class PersonSaveData
     {
-        public string Name { get; set; }
-        public int Health { get; set; }
-        public int MaxHealth { get; set; }
+        [DataMember] public string Name { get; set; }
+        [DataMember] public int Health { get; set; }
+        [DataMember] public int MaxHealth { get; set; }
     }
 
+    [DataContract]
     public sealed class MapCellSaveData
     {
-        public int X { get; set; }
-        public int Y { get; set; }
-        public string Type { get; set; }
-        public PersonSaveData Person { get; set; }
+        [DataMember] public int X { get; set; }
+        [DataMember] public int Y { get; set; }
+        [DataMember] public string Type { get; set; }
+        [DataMember] public PersonSaveData Person { get; set; }
     }
 
+    [DataContract]
     public sealed class SaveData
     {
-        public DateTime SavedAtUtc { get; set; }
-        public int Width { get; set; }
-        public int Height { get; set; }
-        public List<MapCellSaveData> Cells { get; set; }
+        [DataMember] public string SavedAtUtc { get; set; }
+        [DataMember] public int Width { get; set; }
+        [DataMember] public int Height { get; set; }
+        [DataMember] public List<MapCellSaveData> Cells { get; set; }
 
         public SaveData()
         {
-            SavedAtUtc = DateTime.UtcNow;
+            SavedAtUtc = DateTime.UtcNow.ToString("o");
             Cells = new List<MapCellSaveData>();
         }
     }

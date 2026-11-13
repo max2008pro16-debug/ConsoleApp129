@@ -15,15 +15,8 @@ namespace ConsoleApp129
 
         protected Person(int x, int y, string name, int maxHealth, int? currentHealth = null)
         {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new ArgumentException("Имя персонажа не может быть пустым.", nameof(name));
-            }
-
-            if (maxHealth <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maxHealth), "MaxHealth должен быть больше нуля.");
-            }
+            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Имя пустое.", nameof(name));
+            if (maxHealth <= 0) throw new ArgumentOutOfRangeException(nameof(maxHealth));
 
             pointX = x;
             pointY = y;
@@ -36,21 +29,13 @@ namespace ConsoleApp129
 
         public void TakeDamage(int damage)
         {
-            if (damage < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(damage), "Урон не может быть отрицательным.");
-            }
-
+            if (damage < 0) throw new ArgumentOutOfRangeException(nameof(damage));
             Health = Math.Max(0, Health - damage);
         }
 
         public void Heal(int amount)
         {
-            if (amount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(amount), "Лечение не может быть отрицательным.");
-            }
-
+            if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
             Health = Math.Min(MaxHealth, Health + amount);
         }
 
@@ -67,7 +52,15 @@ namespace ConsoleApp129
 
     internal class Hero : Person
     {
-        public Hero(int X, int Y) : base(X, Y, "Герой", 100) { }
+        // ИНВЕНТАРЬ ГЕРОЯ
+        public int InventoryWalls { get; set; }
+        public int InventoryTrees { get; set; }
+
+        public Hero(int X, int Y) : base(X, Y, "Герой", 100)
+        {
+            InventoryWalls = 0;
+            InventoryTrees = 0;
+        }
 
         public override char Rendering_on_the_map()
         {
@@ -86,6 +79,18 @@ namespace ConsoleApp129
         {
             Console.ForegroundColor = ConsoleColor.Red;
             return base.Rendering_on_the_map();
+        }
+    }
+
+    // НОВЫЙ КЛАСС: СОЮЗНИК
+    internal class Ally : Person
+    {
+        public Ally(int X, int Y) : base(X, Y, "Союзник", 80) { }
+
+        public override char Rendering_on_the_map()
+        {
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            return 'A';
         }
     }
 }
