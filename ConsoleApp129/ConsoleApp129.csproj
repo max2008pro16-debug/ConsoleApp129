@@ -78,6 +78,7 @@
     <Compile Include="CharacterInteractionService.cs" />
     <Compile Include="CharacterMenu.cs" />
     <Compile Include="ConsoleHelper.cs" />
+    <Compile Include="GameException.cs" />
     <Compile Include="GameService.cs" />
     <Compile Include="IMenu.cs" />
     <Compile Include="ISaveService.cs" />

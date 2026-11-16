@@ -12,9 +12,17 @@ namespace ConsoleApp129.Services
             if (character == null) throw new ArgumentNullException(nameof(character));
 
             if (character is Hero)
+            {
                 Console.WriteLine(character.Name + ": «Я готов к приключениям!»");
-            else
+            }
+            else if (character is Ally)
+            {
+                Console.WriteLine(character.Name + ": «Приветствую, командир! Рад служить вам!»");
+            }
+            else // Это Враг
+            {
                 Console.WriteLine(character.Name + ": «Убирайся с моей земли, путник!»");
+            }
         }
 
         public void Attack(Person target, int damage)

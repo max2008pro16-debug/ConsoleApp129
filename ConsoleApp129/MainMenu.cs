@@ -50,7 +50,7 @@ namespace ConsoleApp129.Menus
         {
             if (!_gameService.IsGameActive)
             {
-                Console.WriteLine("Нет игры для сохранения.");
+                Console.WriteLine("Нет активной игры. Сначала создайте новую игру!");
                 return;
             }
 
@@ -72,8 +72,8 @@ namespace ConsoleApp129.Menus
 
         private static void ShowAbout()
         {
-            Console.WriteLine("Учебный проект: меню игры, персонажи и сохранения JSON.");
-            Console.WriteLine("Практическая работа №3, МДК.03.01.");
+            Console.WriteLine("Учебный проект: меню игры, персонажи и сохранения.");
+            Console.WriteLine("Практическая работа №4, МДК.03.01.");
         }
     }
 }

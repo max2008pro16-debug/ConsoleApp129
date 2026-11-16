@@ -2,92 +2,114 @@
 
 namespace ConsoleApp129
 {
+    /// Базовый класс для всех персонажей на карте (Герой, Враг, Союзник).
     internal class Person : MapObject
     {
-        private readonly int pointX;
-        private readonly int pointY;
-
+        ///  Имя персонажа.
         public string Name { get; set; }
-        public int MaxHealth { get; }
+
+        ///  Максимальный запас здоровья.
+        public int MaxHealth { get; internal set; }
+
+        ///  Текущий запас здоровья.
         public int Health { get; internal set; }
 
+        ///  Сила атаки персонажа. 
+        public int Damage { get; internal set; }
+
+        /// Проверяет, жив ли персонаж.
         public bool IsAlive { get { return Health > 0; } }
 
-        protected Person(int x, int y, string name, int maxHealth, int? currentHealth = null)
+        /// Инициализирует новый экземпляр класса 
+        ///Координата X.
+        ///Координата Y.
+        ///Имя персонажа.
+        ///Максимальное здоровье.
+        ///Урон.
+        protected Person(int x, int y, string name, int maxHealth, int damage)
         {
-            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Имя пустое.", nameof(name));
-            if (maxHealth <= 0) throw new ArgumentOutOfRangeException(nameof(maxHealth));
-
-            pointX = x;
-            pointY = y;
             Name = name;
             MaxHealth = maxHealth;
-
-            int hp = currentHealth ?? maxHealth;
-            Health = Math.Min(Math.Max(hp, 0), maxHealth);
+            Health = maxHealth;
+            Damage = damage;
         }
 
-        public void TakeDamage(int damage)
+        /// Наносит персонажу урон.
+        ///Количество урона.
+        public void TakeDamage(int dmg)
         {
-            if (damage < 0) throw new ArgumentOutOfRangeException(nameof(damage));
-            Health = Math.Max(0, Health - damage);
+            Health = Math.Max(0, Health - dmg);
         }
 
+        /// Восстанавливает здоровье персонажа.
+        ///Количество восстанавливаемого здоровья.
         public void Heal(int amount)
         {
-            if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
             Health = Math.Min(MaxHealth, Health + amount);
         }
 
-        public override char Rendering_on_the_map()
+        /// Возвращает символ для отрисовки персонажа на карте.
+        public override char RenderOnMap()
         {
             return '☺';
         }
 
+        /// Возвращает строковое представление персонажа с его характеристиками.
         public override string ToString()
         {
-            return string.Format("{0} (HP: {1}/{2})", Name, Health, MaxHealth);
+            return string.Format("{0} (HP: {1}/{2}, Урон: {3})", Name, Health, MaxHealth, Damage);
         }
     }
 
+    /// Класс, описывающий игрока.
     internal class Hero : Person
     {
-        // ИНВЕНТАРЬ ГЕРОЯ
         public int InventoryWalls { get; set; }
         public int InventoryTrees { get; set; }
+        public int InventorySkulls { get; set; }
+        public int Level { get; set; } = 1;
+        public int Coins { get; set; } = 0;
+        public int BonusAllyHealth { get; set; } = 0;
+        public int BonusAllyDamage { get; set; } = 0;
 
-        public Hero(int X, int Y) : base(X, Y, "Герой", 100)
+        /// Инициализирует нового Героя.
+        public Hero(int x, int y) : base(x, y, "Герой", 100, 20)
         {
             InventoryWalls = 0;
             InventoryTrees = 0;
+            InventorySkulls = 0;
         }
 
-        public override char Rendering_on_the_map()
+        public override char RenderOnMap()
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
             return '☻';
         }
     }
 
+    /// Класс врага.
     internal class Enemy : Person
     {
         private static int _counter;
 
-        public Enemy(int X, int Y) : base(X, Y, string.Format("Враг #{0}", ++_counter), 50) { }
+        /// Инициализирует нового Врага.
+        public Enemy(int x, int y) : base(x, y, string.Format("Враг #{0}", ++_counter), 50, 10) { }
 
-        public override char Rendering_on_the_map()
+        public override char RenderOnMap()
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            return base.Rendering_on_the_map();
+            return base.RenderOnMap();
         }
     }
 
-    // НОВЫЙ КЛАСС: СОЮЗНИК
+    /// Класс Союзника, призываемого игроком.
     internal class Ally : Person
     {
-        public Ally(int X, int Y) : base(X, Y, "Союзник", 80) { }
+        /// Инициализирует нового Союзника с бонусами от Героя.
+        public Ally(int x, int y, int heroLevel, int bonusHp, int bonusDmg)
+            : base(x, y, "Союзник", 80 + (heroLevel * 10) + bonusHp, 15 + (heroLevel * 2) + bonusDmg) { }
 
-        public override char Rendering_on_the_map()
+        public override char RenderOnMap()
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
             return 'A';

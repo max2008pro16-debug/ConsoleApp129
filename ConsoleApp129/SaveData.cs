@@ -12,6 +12,7 @@ namespace ConsoleApp129.SaveSystem
         [DataMember] public string Name { get; set; }
         [DataMember] public int Health { get; set; }
         [DataMember] public int MaxHealth { get; set; }
+        [DataMember] public int Coins { get; set; } 
     }
 
     [DataContract]

@@ -28,6 +28,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SaveSystem", "SaveSystem", 
 		ConsoleApp129\SaveServiceFactory.cs = ConsoleApp129\SaveServiceFactory.cs
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{6727B2C6-654D-4AE3-BD1B-927DAA9A9B98}"
+	ProjectSection(SolutionItems) = preProject
+		ConsoleApp129\ConsoleHelper.cs = ConsoleApp129\ConsoleHelper.cs
+		ConsoleApp129\GameException.cs = ConsoleApp129\GameException.cs
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

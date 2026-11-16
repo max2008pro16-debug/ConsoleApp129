@@ -1,6 +1,7 @@
-﻿using System;
+﻿using ConsoleApp129.Services;
+using System;
 using System.Collections.Generic;
-using ConsoleApp129.Services;
+using System.Linq;
 
 namespace ConsoleApp129.Menus
 {
@@ -24,8 +25,7 @@ namespace ConsoleApp129.Menus
             {
                 new MenuItem("Показать всех персонажей", ShowCharacters),
                 new MenuItem("Поговорить с персонажем", TalkWithCharacter),
-                new MenuItem("Нанести урон персонажу", DamageCharacter),
-                new MenuItem("Вылечить персонажа", HealCharacter)
+                new MenuItem("Отдохнуть (+10 HP, ход врагов)", Rest) // ЗАМЕНА
             });
         }
 
@@ -63,37 +63,11 @@ namespace ConsoleApp129.Menus
 
         private void TalkWithCharacter()
         {
-            Person character = SelectCharacter();
-            if (character != null) _interactionService.TalkTo(character);
-        }
-
-        private void DamageCharacter()
-        {
-            Person character = SelectCharacter();
-            if (character == null) return;
-
-            var damage = ReadNonNegativeInt("Введите урон: ");
-            _interactionService.Attack(character, damage);
-
-            if (_gameService.CurrentMap != null) _gameService.CurrentMap.CleanupDeadCharacters();
-        }
-
-        private void HealCharacter()
-        {
-            Person character = SelectCharacter();
-            if (character == null) return;
-
-            var amount = ReadNonNegativeInt("Введите количество лечения: ");
-            _interactionService.Heal(character, amount);
-        }
-
-        private Person SelectCharacter()
-        {
             var characters = GetPersons();
             if (characters.Count == 0)
             {
-                Console.WriteLine("Нет доступных персонажей.");
-                return null;
+                Console.WriteLine("Некого слушать.");
+                return;
             }
 
             ShowCharacters();
@@ -102,22 +76,31 @@ namespace ConsoleApp129.Menus
 
             if (!int.TryParse(Console.ReadLine(), out index) || index < 1 || index > characters.Count)
             {
-                Console.WriteLine("Некорректный номер персонажа.");
-                return null;
+                Console.WriteLine("Некорректный номер.");
+                return;
             }
 
-            return characters[index - 1];
+            _interactionService.TalkTo(characters[index - 1]);
         }
 
-        private static int ReadNonNegativeInt(string prompt)
+        // НОВЫЙ МЕТОД ОТДЫХА
+        private void Rest()
         {
-            while (true)
+            var hero = _gameService.CurrentMap.GetAllPersons().FirstOrDefault(p => p is Hero) as Hero;
+            if (hero == null || !hero.IsAlive) return;
+
+            if (hero.Health >= hero.MaxHealth)
             {
-                Console.Write(prompt);
-                int value;
-                if (int.TryParse(Console.ReadLine(), out value) && value >= 0) return value;
-                Console.WriteLine("Введите неотрицательное целое число.");
+                Console.WriteLine("У вас уже максимальное здоровье.");
+                return;
             }
+
+            hero.Heal(10);
+            Console.WriteLine(string.Format("Вы отдохнули и восстановили 10 HP. Текущее HP: {0}/{1}", hero.Health, hero.MaxHealth));
+            Console.WriteLine("Пока вы отдыхали, враги сделали ход...");
+
+            // Враги и союзники ходят, пока вы в меню
+            _gameService.CurrentMap.MovePersons();
         }
     }
 }
