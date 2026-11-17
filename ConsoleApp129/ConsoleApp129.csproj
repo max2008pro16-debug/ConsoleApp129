@@ -75,24 +75,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CharacterInteractionService.cs" />
-    <Compile Include="CharacterMenu.cs" />
-    <Compile Include="ConsoleHelper.cs" />
-    <Compile Include="GameException.cs" />
-    <Compile Include="GameService.cs" />
-    <Compile Include="IMenu.cs" />
-    <Compile Include="ISaveService.cs" />
-    <Compile Include="JsonSaveService.cs" />
-    <Compile Include="MainMenu.cs" />
+    <Compile Include="Service\CharacterInteractionService.cs" />
+    <Compile Include="Menus\CharacterMenu.cs" />
+    <Compile Include="Core\ConsoleHelper.cs" />
+    <Compile Include="Core\GameException.cs" />
+    <Compile Include="Service\GameService.cs" />
+    <Compile Include="Menus\IMenu.cs" />
+    <Compile Include="SaveSystem\ISaveService.cs" />
+    <Compile Include="SaveSystem\JsonSaveService.cs" />
+    <Compile Include="Menus\MainMenu.cs" />
     <Compile Include="Map.cs" />
     <Compile Include="MapObject.cs" />
-    <Compile Include="MenuItem.cs" />
-    <Compile Include="MenuManager.cs" />
+    <Compile Include="Menus\MenuItem.cs" />
+    <Compile Include="Menus\MenuManager.cs" />
     <Compile Include="Person.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SaveData.cs" />
-    <Compile Include="SaveServiceFactory.cs" />
+    <Compile Include="SaveSystem\SaveData.cs" />
+    <Compile Include="SaveSystem\SaveServiceFactory.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

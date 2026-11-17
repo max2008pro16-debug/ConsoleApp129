@@ -1,27 +1,21 @@
 ﻿using ConsoleApp129.Core;
 using ConsoleApp129.Menus;
-using ConsoleApp129.SaveSystem;
 using System;
 using System.Linq;
 
-
 namespace ConsoleApp129.Services
 {
-    /// Сервис, управляющий игровым процессом (цикл игры, магазин).
     internal sealed class GameService
     {
         public Map CurrentMap { get; private set; }
         public bool IsGameActive { get { return CurrentMap != null; } }
 
-        /// Начинает новую игру и генерирует карту.
         public void StartNewGame()
         {
             CurrentMap = new Map();
             CurrentMap.Map_generation();
         }
 
-        /// Запускает основной цикл игры.
-        /// Ссылка на меню персонажей.
         public void RunGameLoop(IMenu characterMenu)
         {
             if (CurrentMap == null) return;
@@ -36,17 +30,75 @@ namespace ConsoleApp129.Services
                     return;
                 }
 
+                var hero = CurrentMap.GetAllPersons().FirstOrDefault(p => p is Hero) as Hero;
+
+                if (CurrentMap.BossTriggered > 0 && !CurrentMap.IsBossMap)
+                {
+                    int bossType = CurrentMap.BossTriggered;
+                    Console.Clear();
+                    Console.WriteLine("Вы построили портал к Боссу " + bossType + "!");
+                    ConsoleHelper.Pause();
+
+                    CurrentMap = new Map();
+                    CurrentMap.GenerateBossMap(bossType, hero);
+                    continue;
+                }
+
+                if (CurrentMap.IsBossMap)
+                {
+                    var boss = CurrentMap.GetAllPersons().OfType<Boss>().FirstOrDefault();
+                    if (boss == null || !boss.IsAlive)
+                    {
+                        Console.Clear();
+                        Console.WriteLine("Вы победили Босса " + CurrentMap.CurrentBossType + "!");
+                        hero.BossDefeated[CurrentMap.CurrentBossType] = true;
+                        hero.InventoryArtifacts[CurrentMap.CurrentBossType] = 0;
+
+                        int defeatedCount = 0;
+                        for (int k = 1; k <= 5; k++) if (hero.BossDefeated[k]) defeatedCount++;
+
+                        if (defeatedCount >= 5)
+                        {
+                            Console.Clear();
+                            Console.WriteLine("ПОЗДРАВЛЯЕМ! ВЫ ПОБЕДИЛИ ВСЕХ 5 БОССОВ И ПРОШЛИ ИГРУ!");
+                            ConsoleHelper.Pause();
+                            CurrentMap = null;
+                            return;
+                        }
+                        else
+                        {
+                            ConsoleHelper.Pause();
+                            CurrentMap = new Map();
+                            CurrentMap.Map_generation(hero);
+                            continue;
+                        }
+                    }
+                }
+
                 Console.Clear();
                 CurrentMap.CleanupDeadCharacters();
                 CurrentMap.Drawing_the_map();
+                Console.ResetColor();
 
-                var hero = CurrentMap.GetAllPersons().FirstOrDefault(p => p is Hero) as Hero;
-                string invInfo = hero != null ? string.Format("[+] {0}  [T] {1}  [☠] {2}  [Монеты] {3}", hero.InventoryWalls, hero.InventoryTrees, hero.InventorySkulls, hero.Coins) : "";
-                string freezeInfo = CurrentMap.ParalysisTurns > 0 ? string.Format(" (Заморозка: {0})", CurrentMap.ParalysisTurns) : "";
+                if (hero != null)
+                {
+                    string stats = string.Format("Ур:{0} HP:{1}/{2} Монеты:{3} | [+] {4} [T] {5} [☠] {6}",
+                        hero.Level, hero.Health, hero.MaxHealth, hero.Coins,
+                        hero.InventoryWalls, hero.InventoryTrees, hero.InventorySkulls);
+                    Console.WriteLine(stats);
 
-                Console.WriteLine("\nУровень: " + (hero != null ? hero.Level : 1) + " | HP: " + (hero != null ? hero.Health : 0) + " | Урон: " + (hero != null ? hero.Damage : 0));
-                Console.WriteLine("Инвентарь: " + invInfo + freezeInfo);
-                Console.WriteLine("Стрелки - ход/атака, 1 - стена(+), 2 - дерево(T), 3 - поставить череп(☠), C - персонажи");
+                    string arts = "Артефакты: ";
+                    for (int t = 1; t <= 5; t++)
+                    {
+                        if (t == hero.SelectedArtifactType)
+                            arts += string.Format(">[{0}:{1}]< ", t, hero.InventoryArtifacts[t]);
+                        else
+                            arts += string.Format("[{0}:{1}] ", t, hero.InventoryArtifacts[t]);
+                    }
+                    Console.WriteLine(arts);
+                }
+
+                Console.WriteLine("Стрелки-ход, 1=+, 2=T, 3=☠, 4=♦, C=Меню");
 
                 while (Console.KeyAvailable) Console.ReadKey(true);
                 var keyInfo = Console.ReadKey(true);
@@ -59,6 +111,7 @@ namespace ConsoleApp129.Services
                     if (keyInfo.Key == ConsoleKey.D1 || keyInfo.Key == ConsoleKey.NumPad1) { CurrentMap.PlaceObject('W'); continue; }
                     if (keyInfo.Key == ConsoleKey.D2 || keyInfo.Key == ConsoleKey.NumPad2) { CurrentMap.PlaceObject('T'); continue; }
                     if (keyInfo.Key == ConsoleKey.D3 || keyInfo.Key == ConsoleKey.NumPad3) { CurrentMap.PlaceObject('S'); continue; }
+                    if (keyInfo.Key == ConsoleKey.D4 || keyInfo.Key == ConsoleKey.NumPad4) { CurrentMap.PlaceObject('A'); continue; }
 
                     CurrentMap.MovePersons(keyInfo.Key);
                     CurrentMap.MovePersons();
@@ -67,7 +120,7 @@ namespace ConsoleApp129.Services
                     {
                         OpenShop(hero);
                         CurrentMap = new Map();
-                        CurrentMap.Map_generation(hero); // ПЕРЕДАЕМ ПРОКАЧАННОГО ГЕРОЯ!
+                        CurrentMap.Map_generation(hero);
                     }
                 }
                 catch (GameException ex)
@@ -78,8 +131,7 @@ namespace ConsoleApp129.Services
                 }
             }
         }
-        /// Открывает магазин прокачки после перехода на новый уровень.
-        /// Ссылка на прокачиваемого Героя.
+
         private void OpenShop(Hero hero)
         {
             hero.Level++;
@@ -91,9 +143,8 @@ namespace ConsoleApp129.Services
                 Console.WriteLine("Ваши монеты: " + hero.Coins);
                 Console.WriteLine("---------------------------------");
                 Console.WriteLine("1. Здоровье Героя (+50 HP) - 50 монет");
-                Console.WriteLine("2. Урон Героя (+10 Урона) - 50 монет");
-                Console.WriteLine("3. Здоровье Союзников (+20 HP) - 30 монет");
-                Console.WriteLine("4. Урон Союзников (+5 Урона) - 30 монет");
+                Console.WriteLine("2. Здоровье Союзников (+20 HP) - 30 монет");
+                Console.WriteLine("3. Урон Союзников (+5 Урона) - 30 монет");
                 Console.WriteLine("0. Закончить покупки и перейти на следующий уровень");
                 Console.Write("Ваш выбор: ");
 
@@ -107,14 +158,10 @@ namespace ConsoleApp129.Services
                         else Console.WriteLine("Недостаточно монет!");
                         break;
                     case "2":
-                        if (hero.Coins >= 50) { hero.Coins -= 50; hero.Damage += 10; Console.WriteLine("Урон Героя увеличен!"); }
-                        else Console.WriteLine("Недостаточно монет!");
-                        break;
-                    case "3":
                         if (hero.Coins >= 30) { hero.Coins -= 30; hero.BonusAllyHealth += 20; Console.WriteLine("Будущие союзники станут крепче!"); }
                         else Console.WriteLine("Недостаточно монет!");
                         break;
-                    case "4":
+                    case "3":
                         if (hero.Coins >= 30) { hero.Coins -= 30; hero.BonusAllyDamage += 5; Console.WriteLine("Будущие союзники станут сильнее!"); }
                         else Console.WriteLine("Недостаточно монет!");
                         break;

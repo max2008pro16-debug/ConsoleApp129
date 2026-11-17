@@ -12,7 +12,9 @@ namespace ConsoleApp129.SaveSystem
         [DataMember] public string Name { get; set; }
         [DataMember] public int Health { get; set; }
         [DataMember] public int MaxHealth { get; set; }
-        [DataMember] public int Coins { get; set; } 
+        [DataMember] public int Coins { get; set; }
+        [DataMember] public int[] InventoryArtifacts { get; set; }
+        [DataMember] public bool[] BossDefeated { get; set; }
     }
 
     [DataContract]
@@ -21,6 +23,7 @@ namespace ConsoleApp129.SaveSystem
         [DataMember] public int X { get; set; }
         [DataMember] public int Y { get; set; }
         [DataMember] public string Type { get; set; }
+        [DataMember] public int ArtifactType { get; set; }
         [DataMember] public PersonSaveData Person { get; set; }
     }
 
