@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ConsoleApp129
 {
@@ -36,15 +32,14 @@ namespace ConsoleApp129
         public override char RenderOnMap() { Console.ForegroundColor = ConsoleColor.Magenta; return 'O'; }
     }
 
-    // АРТЕФАКТ ТЕПЕРЬ ИМЕЕТ ТИП (1-5)
     internal class Artifact : MapObject
     {
         public int Type { get; set; }
         public Artifact(int type) { Type = type; }
         public override char RenderOnMap()
         {
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            return (char)('0' + Type);
+            Console.ForegroundColor = ArtifactInfo.GetColor(Type);
+            return ArtifactInfo.GetSymbol(Type);
         }
     }
 }

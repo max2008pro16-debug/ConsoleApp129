@@ -26,79 +26,91 @@ namespace ConsoleApp129.Services
                 {
                     Console.Clear();
                     Console.WriteLine("Герой погиб! Игра окончена.");
+                    var deadHero = CurrentMap.GetAllPersons().FirstOrDefault(p => p is Hero) as Hero;
+                    if (deadHero != null) StoryService.ShowDeathNarrative(deadHero.PortalHistory);
                     ConsoleHelper.Pause();
                     return;
                 }
 
                 var hero = CurrentMap.GetAllPersons().FirstOrDefault(p => p is Hero) as Hero;
 
+                // ВХОД В СПЕЦ-УРОВЕНЬ
                 if (CurrentMap.BossTriggered > 0 && !CurrentMap.IsBossMap)
                 {
-                    int bossType = CurrentMap.BossTriggered;
-                    Console.Clear();
-                    Console.WriteLine("Вы построили портал к Боссу " + bossType + "!");
+                    int artifactType = CurrentMap.BossTriggered;
+                    CurrentMap.BossTriggered = 0;
+
+                    StoryService.ShowPortalEntryStory(artifactType, hero.PortalHistory);
                     ConsoleHelper.Pause();
 
                     CurrentMap = new Map();
-                    CurrentMap.GenerateBossMap(bossType, hero);
+                    CurrentMap.GenerateSpecialLevel(artifactType, hero);
                     continue;
                 }
 
-                if (CurrentMap.IsBossMap)
+                // ЗАВЕРШЕНИЕ СПЕЦ-УРОВНЯ
+                if (CurrentMap.IsBossMap && CurrentMap.IsSpecialLevelComplete())
                 {
-                    var boss = CurrentMap.GetAllPersons().OfType<Boss>().FirstOrDefault();
-                    if (boss == null || !boss.IsAlive)
+                    int artifactType = CurrentMap.CurrentArtifactType;
+                    hero.PortalHistory.Add(artifactType);
+                    hero.BossDefeated[artifactType] = true;
+
+                    StoryService.ShowPortalCompleteStory(artifactType, hero.PortalHistory);
+                    ConsoleHelper.Pause();
+
+                    bool allComplete = true;
+                    for (int k = 1; k <= 5; k++)
+                        if (!hero.BossDefeated[k]) { allComplete = false; break; }
+
+                    if (allComplete)
                     {
-                        Console.Clear();
-                        Console.WriteLine("Вы победили Босса " + CurrentMap.CurrentBossType + "!");
-                        hero.BossDefeated[CurrentMap.CurrentBossType] = true;
-                        hero.InventoryArtifacts[CurrentMap.CurrentBossType] = 0;
-
-                        int defeatedCount = 0;
-                        for (int k = 1; k <= 5; k++) if (hero.BossDefeated[k]) defeatedCount++;
-
-                        if (defeatedCount >= 5)
-                        {
-                            Console.Clear();
-                            Console.WriteLine("ПОЗДРАВЛЯЕМ! ВЫ ПОБЕДИЛИ ВСЕХ 5 БОССОВ И ПРОШЛИ ИГРУ!");
-                            ConsoleHelper.Pause();
-                            CurrentMap = null;
-                            return;
-                        }
-                        else
-                        {
-                            ConsoleHelper.Pause();
-                            CurrentMap = new Map();
-                            CurrentMap.Map_generation(hero);
-                            continue;
-                        }
+                        StoryService.ShowEnding(hero.PortalHistory);
+                        ConsoleHelper.Pause();
+                        CurrentMap = null;
+                        return;
                     }
+
+                    // Уровень + магазин после прохождения спец-уровня
+                    OpenShop(hero);
+                    CurrentMap = new Map();
+                    CurrentMap.Map_generation(hero);
+                    continue;
                 }
 
                 Console.Clear();
                 CurrentMap.CleanupDeadCharacters();
+
+                if (CurrentMap.IsBossMap)
+                {
+                    Console.ForegroundColor = ConsoleColor.Magenta;
+                    Console.WriteLine("=== " + GetLevelTitle(CurrentMap.CurrentLevelType) + " ===");
+                    Console.ResetColor();
+                }
+
                 CurrentMap.Drawing_the_map();
                 Console.ResetColor();
 
                 if (hero != null)
                 {
-                    string stats = string.Format("Ур:{0} HP:{1}/{2} Монеты:{3} | [+] {4} [T] {5} [☠] {6}",
-                        hero.Level, hero.Health, hero.MaxHealth, hero.Coins,
+                    int collected = 0;
+                    for (int k = 1; k <= 5; k++) if (hero.BossDefeated[k]) collected++;
+
+                    Console.WriteLine("Ур:{0} HP:{1}/{2} Монеты:{3} Печати:{4}/5 | [+] {5} [T] {6} [☠] {7}",
+                        hero.Level, hero.Health, hero.MaxHealth, hero.Coins, collected,
                         hero.InventoryWalls, hero.InventoryTrees, hero.InventorySkulls);
-                    Console.WriteLine(stats);
 
                     string arts = "Артефакты: ";
                     for (int t = 1; t <= 5; t++)
                     {
-                        if (t == hero.SelectedArtifactType)
-                            arts += string.Format(">[{0}:{1}]< ", t, hero.InventoryArtifacts[t]);
-                        else
-                            arts += string.Format("[{0}:{1}] ", t, hero.InventoryArtifacts[t]);
+                        string prefix = (t == hero.SelectedArtifactType) ? ">" : "";
+                        string suffix = (t == hero.SelectedArtifactType) ? "<" : "";
+                        arts += string.Format("{0}{1}:{2}{3} ", prefix,
+                            ArtifactInfo.GetSymbol(t), hero.InventoryArtifacts[t], suffix);
                     }
                     Console.WriteLine(arts);
                 }
 
-                Console.WriteLine("Стрелки-ход, 1=+, 2=T, 3=☠, 4=♦, C=Меню");
+                Console.WriteLine("Стрелки-ход, 1=+, 2=T, 3=☠, 4=♦(выбранная), C=Меню");
 
                 while (Console.KeyAvailable) Console.ReadKey(true);
                 var keyInfo = Console.ReadKey(true);
@@ -116,7 +128,7 @@ namespace ConsoleApp129.Services
                     CurrentMap.MovePersons(keyInfo.Key);
                     CurrentMap.MovePersons();
 
-                    if (CurrentMap.LevelUpTriggered && hero != null)
+                    if (CurrentMap.LevelUpTriggered && !CurrentMap.IsBossMap && hero != null)
                     {
                         OpenShop(hero);
                         CurrentMap = new Map();
@@ -129,6 +141,19 @@ namespace ConsoleApp129.Services
                     Console.WriteLine(string.Format("Ошибка [{0}]: {1}", ex.ErrorCode, ex.Message));
                     ConsoleHelper.Pause();
                 }
+            }
+        }
+
+        private static string GetLevelTitle(LevelType t)
+        {
+            switch (t)
+            {
+                case LevelType.ChaosBoss: return "ЛОГОВО ВЛАДЫКИ ПЛАМЕНИ";
+                case LevelType.OrderBoss: return "ЧЕРТОГИ ЛЕДЯНОГО СТРАЖА";
+                case LevelType.Arena: return "ЗАЛ ИСПЫТАНИЙ";
+                case LevelType.Abyss: return "БЕЗДНА";
+                case LevelType.Sanctuary: return "СВЯТИЛИЩЕ";
+                default: return "";
             }
         }
 
@@ -158,11 +183,11 @@ namespace ConsoleApp129.Services
                         else Console.WriteLine("Недостаточно монет!");
                         break;
                     case "2":
-                        if (hero.Coins >= 30) { hero.Coins -= 30; hero.BonusAllyHealth += 20; Console.WriteLine("Будущие союзники станут крепче!"); }
+                        if (hero.Coins >= 30) { hero.Coins -= 30; hero.BonusAllyHealth += 20; Console.WriteLine("Союзники станут крепче!"); }
                         else Console.WriteLine("Недостаточно монет!");
                         break;
                     case "3":
-                        if (hero.Coins >= 30) { hero.Coins -= 30; hero.BonusAllyDamage += 5; Console.WriteLine("Будущие союзники станут сильнее!"); }
+                        if (hero.Coins >= 30) { hero.Coins -= 30; hero.BonusAllyDamage += 5; Console.WriteLine("Союзники станут сильнее!"); }
                         else Console.WriteLine("Недостаточно монет!");
                         break;
                     default: Console.WriteLine("Неверный ввод."); break;

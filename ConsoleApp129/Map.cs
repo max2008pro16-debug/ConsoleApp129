@@ -18,6 +18,8 @@ namespace ConsoleApp129
         public int BossTriggered { get; set; } = 0;
         public bool IsBossMap { get; set; } = false;
         public int CurrentBossType { get; set; } = 0;
+        public LevelType CurrentLevelType { get; set; } = LevelType.Normal;
+        public int CurrentArtifactType { get; set; } = 0;
 
         public void Map_generation(Hero existingHero = null)
         {
@@ -61,7 +63,7 @@ namespace ConsoleApp129
 
             if (existingHero != null)
             {
-                System.Collections.Generic.List<int> availableTypes = new System.Collections.Generic.List<int>();
+                List<int> availableTypes = new List<int>();
                 for (int t = 1; t <= 5; t++)
                 {
                     if (!existingHero.BossDefeated[t]) availableTypes.Add(t);
@@ -95,25 +97,115 @@ namespace ConsoleApp129
             }
         }
 
-        public void GenerateBossMap(int bossType, Hero hero)
+        // ─── СПЕЦ-УРОВНИ ───
+        public void GenerateSpecialLevel(int artifactType, Hero hero)
+        {
+            IsBossMap = true;
+            CurrentArtifactType = artifactType;
+            CurrentLevelType = ArtifactInfo.GetLevelType(artifactType);
+            LevelUpTriggered = false;
+
+            switch (CurrentLevelType)
+            {
+                case LevelType.ChaosBoss:
+                case LevelType.OrderBoss: GenerateBossLevel(artifactType, hero); break;
+                case LevelType.Arena: GenerateArenaLevel(hero); break;
+                case LevelType.Abyss: GenerateAbyssLevel(hero); break;
+                case LevelType.Sanctuary: GenerateSanctuaryLevel(hero); break;
+            }
+        }
+
+        private void GenerateBossLevel(int artifactType, Hero hero)
         {
             map = new MapObject[25, 25];
-            IsBossMap = true;
-            CurrentBossType = bossType;
-
             for (int i = 0; i < 25; i++)
-            {
                 for (int j = 0; j < 25; j++)
                 {
                     map[i, j] = new Field();
                     if (i == 0 || i == 24 || j == 0 || j == 24) map[i, j] = new Wall();
                     else if (rand.Next(100) < 10) map[i, j] = new Wall();
                 }
-            }
             map[22, 12] = hero;
-            map[2, 12] = new Boss(2, 12, bossType);
+
+            Boss boss = new Boss(2, 12, artifactType);
+            boss.Name = artifactType == 1 ? "Владыка Пламени" : "Ледяной Страж";
+            map[2, 12] = boss;
         }
 
+        private void GenerateArenaLevel(Hero hero)
+        {
+            map = new MapObject[25, 25];
+            for (int i = 0; i < 25; i++)
+                for (int j = 0; j < 25; j++)
+                {
+                    map[i, j] = new Field();
+                    if (i == 0 || i == 24 || j == 0 || j == 24) map[i, j] = new Wall();
+                }
+            map[22, 12] = hero;
+
+            int placed = 0;
+            while (placed < 10)
+            {
+                int x = rand.Next(3, 22), y = rand.Next(3, 22);
+                if (map[x, y] is Field && !(x == 22 && y == 12))
+                { map[x, y] = new Enemy(x, y); placed++; }
+            }
+        }
+
+        private void GenerateAbyssLevel(Hero hero)
+        {
+            map = new MapObject[25, 25];
+            for (int i = 0; i < 25; i++)
+                for (int j = 0; j < 25; j++)
+                {
+                    map[i, j] = new Field();
+                    if (i == 0 || i == 24 || j == 0 || j == 24) map[i, j] = new Wall();
+                    else if (rand.Next(100) < 25) map[i, j] = new Wall();
+                }
+            map[22, 12] = hero;
+
+            int placed = 0;
+            while (placed < 6)
+            {
+                int x = rand.Next(3, 22), y = rand.Next(3, 22);
+                if (map[x, y] is Field && !(x == 22 && y == 12))
+                { map[x, y] = new Hunter(x, y); placed++; }
+            }
+        }
+
+        private void GenerateSanctuaryLevel(Hero hero)
+        {
+            map = new MapObject[25, 25];
+            for (int i = 0; i < 25; i++)
+                for (int j = 0; j < 25; j++)
+                {
+                    map[i, j] = new Field();
+                    if (i == 0 || i == 24 || j == 0 || j == 24) map[i, j] = new Wall();
+                }
+            map[22, 12] = hero;
+            map[12, 12] = new Portal();
+
+            hero.Health = hero.MaxHealth;
+            hero.Coins += 100;
+        }
+
+        public bool IsSpecialLevelComplete()
+        {
+            if (!IsBossMap) return false;
+            switch (CurrentLevelType)
+            {
+                case LevelType.ChaosBoss:
+                case LevelType.OrderBoss:
+                case LevelType.Arena:
+                case LevelType.Abyss:
+                    return !GetAllPersons().Any(p => p is Enemy || p is Hunter || p is Archer || p is Boss);
+                case LevelType.Sanctuary:
+                    return LevelUpTriggered;
+                default: return false;
+            }
+        }
+
+        // ─── ОСТАЛЬНОЕ (без изменений от предыдущей версии) ───
         public void Drawing_the_map()
         {
             for (int i = 0; i < map.GetLength(0); i++)
@@ -156,7 +248,7 @@ namespace ConsoleApp129
                             if (newMap[newX, newY] is Artifact ar)
                             {
                                 hero.InventoryArtifacts[ar.Type]++;
-                                Console.WriteLine("Вы нашли Артефакт " + ar.Type + "!");
+                                Console.WriteLine("Вы нашли " + ArtifactInfo.GetName(ar.Type) + "!");
                                 ConsoleHelper.Pause();
                             }
 
@@ -352,18 +444,10 @@ namespace ConsoleApp129
                                     if (victim != null)
                                     {
                                         victim.TakeDamage(enemy.Damage);
-
-                                        // ПАУЗА ТОЛЬКО ПРИ СМЕРТИ ИЛИ ЕСЛИ 1 УДАР ОСТАЛСЯ
                                         if (victim.Health <= 0)
-                                        {
-                                            Console.WriteLine("Лучник убил " + victim.Name + "!");
-                                            ConsoleHelper.Pause();
-                                        }
+                                        { Console.WriteLine("Лучник убил " + victim.Name + "!"); ConsoleHelper.Pause(); }
                                         else if (victim.Health <= enemy.Damage)
-                                        {
-                                            Console.WriteLine("ОПАСНО! Лучник ранил " + victim.Name + ". Осталось мало HP: " + victim.Health);
-                                            ConsoleHelper.Pause();
-                                        }
+                                        { Console.WriteLine("ОПАСНО! Лучник ранил " + victim.Name + ". HP: " + victim.Health); ConsoleHelper.Pause(); }
                                     }
                                     if (victim != null && !victim.IsAlive) newMap[target[0], target[1]] = new Field();
                                     actionTaken = true;
@@ -422,38 +506,16 @@ namespace ConsoleApp129
                         else if (newMap[newX, newY] is Hero h)
                         {
                             h.TakeDamage(enemy.Damage);
-
-                            // ПАУЗА ТОЛЬКО ПРИ СМЕРТИ ИЛИ ЕСЛИ 1 УДАР ОСТАЛСЯ
-                            if (h.Health <= 0)
-                            {
-                                Console.WriteLine("Герой погиб от удара!");
-                                ConsoleHelper.Pause();
-                            }
-                            else if (h.Health <= enemy.Damage)
-                            {
-                                Console.WriteLine("ВНИМАНИЕ! У Героя осталось мало HP (1 удар): " + h.Health);
-                                ConsoleHelper.Pause();
-                            }
-
+                            if (h.Health <= 0) { Console.WriteLine("Герой погиб от удара!"); ConsoleHelper.Pause(); }
+                            else if (h.Health <= enemy.Damage) { Console.WriteLine("ВНИМАНИЕ! HP Героя: " + h.Health); ConsoleHelper.Pause(); }
                             if (!h.IsAlive) newMap[newX, newY] = new Field();
                         }
                         else if (newMap[newX, newY] is Ally ally)
                         {
                             ally.TakeDamage(enemy.Damage);
                             enemy.TakeDamage(ally.Damage);
-
-                            // ПАУЗА ТОЛЬКО ПРИ СМЕРТИ ИЛИ ЕСЛИ 1 УДАР ОСТАЛСЯ
-                            if (ally.Health <= 0)
-                            {
-                                Console.WriteLine("Враг убил Союзника!");
-                                ConsoleHelper.Pause();
-                            }
-                            else if (ally.Health <= enemy.Damage)
-                            {
-                                Console.WriteLine("ВНИМАНИЕ! Союзник при смерти (1 удар, HP: " + ally.Health + ")");
-                                ConsoleHelper.Pause();
-                            }
-
+                            if (ally.Health <= 0) { Console.WriteLine("Враг убил Союзника!"); ConsoleHelper.Pause(); }
+                            else if (ally.Health <= enemy.Damage) { Console.WriteLine("ВНИМАНИЕ! Союзник при смерти (HP: " + ally.Health + ")"); ConsoleHelper.Pause(); }
                             if (!ally.IsAlive) newMap[newX, newY] = new Field();
                             if (!enemy.IsAlive) { newMap[i, j] = new Skull(); }
                         }
@@ -470,16 +532,12 @@ namespace ConsoleApp129
             int tx = -1, ty = -1;
 
             for (int i = 0; i < map.GetLength(0); i++)
-            {
                 for (int j = 0; j < map.GetLength(1); j++)
-                {
                     if (map[i, j] is Hero || map[i, j] is Ally)
                     {
                         int dist = Math.Abs(startX - i) + Math.Abs(startY - j);
                         if (dist < minDist) { minDist = dist; tx = i; ty = j; targetPerson = (Person)map[i, j]; }
                     }
-                }
-            }
             if (targetPerson != null) return new int[] { tx, ty };
             return null;
         }
@@ -520,26 +578,12 @@ namespace ConsoleApp129
                             if (target != null)
                             {
                                 target.TakeDamage(ally.Damage);
-
-                                // ЕСЛИ ВРАГ НЕ ЗАМОРОЖЕН, ОН БЬЕТ В ОТВЕТ
                                 if (ParalysisTurns == 0)
                                 {
                                     ally.TakeDamage(target.Damage);
-
-                                    // ПАУЗА ТОЛЬКО ПРИ СМЕРТИ ИЛИ ЕСЛИ 1 УДАР ОСТАЛСЯ
-                                    if (ally.Health <= 0)
-                                    {
-                                        Console.WriteLine("Союзник погиб в бою!");
-                                        ConsoleHelper.Pause();
-                                    }
-                                    else if (ally.Health <= target.Damage)
-                                    {
-                                        Console.WriteLine("ВНИМАНИЕ! Союзник при смерти (1 удар, HP: " + ally.Health + ")");
-                                        ConsoleHelper.Pause();
-                                    }
+                                    if (ally.Health <= 0) { Console.WriteLine("Союзник погиб в бою!"); ConsoleHelper.Pause(); }
+                                    else if (ally.Health <= target.Damage) { Console.WriteLine("ВНИМАНИЕ! Союзник при смерти (HP: " + ally.Health + ")"); ConsoleHelper.Pause(); }
                                 }
-                                // Если враг заморожен, никакой паузы не будет (союзник просто бьет)
-
                                 if (!target.IsAlive)
                                 {
                                     var h = GetAllPersons().FirstOrDefault(p => p is Hero) as Hero;
@@ -637,7 +681,20 @@ namespace ConsoleApp129
                     else if (obj is Skull) cell.Type = "Skull";
                     else if (obj is Portal) cell.Type = "Portal";
                     else if (obj is Artifact ar) { cell.Type = "Artifact"; cell.ArtifactType = ar.Type; }
-                    else if (obj is Hero h) { cell.Type = "Hero"; cell.Person = new PersonSaveData { Name = h.Name, Health = h.Health, MaxHealth = h.MaxHealth, Coins = h.Coins, InventoryArtifacts = h.InventoryArtifacts, BossDefeated = h.BossDefeated }; }
+                    else if (obj is Hero h)
+                    {
+                        cell.Type = "Hero";
+                        cell.Person = new PersonSaveData
+                        {
+                            Name = h.Name,
+                            Health = h.Health,
+                            MaxHealth = h.MaxHealth,
+                            Coins = h.Coins,
+                            InventoryArtifacts = h.InventoryArtifacts,
+                            BossDefeated = h.BossDefeated,
+                            PortalHistory = h.PortalHistory
+                        };
+                    }
                     else if (obj is Hunter hn) { cell.Type = "Hunter"; cell.Person = new PersonSaveData { Name = hn.Name, Health = hn.Health, MaxHealth = hn.MaxHealth }; }
                     else if (obj is Archer a) { cell.Type = "Archer"; cell.Person = new PersonSaveData { Name = a.Name, Health = a.Health, MaxHealth = a.MaxHealth }; }
                     else if (obj is Enemy e) { cell.Type = "Enemy"; cell.Person = new PersonSaveData { Name = e.Name, Health = e.Health, MaxHealth = e.MaxHealth }; }
@@ -665,38 +722,56 @@ namespace ConsoleApp129
                     case "Portal": map[cell.X, cell.Y] = new Portal(); break;
                     case "Artifact": map[cell.X, cell.Y] = new Artifact(cell.ArtifactType); break;
                     case "Boss":
-                        var b = new Boss(cell.X, cell.Y, 1); if (cell.Person != null) { b.Health = cell.Person.Health; }
+                        var b = new Boss(cell.X, cell.Y, 1);
+                        if (cell.Person != null) b.Health = cell.Person.Health;
                         map[cell.X, cell.Y] = b;
                         break;
                     case "Hero":
                         if (!heroLoaded)
                         {
                             var h = new Hero(cell.X, cell.Y);
-                            if (cell.Person != null) { h.Health = cell.Person.Health; h.Coins = cell.Person.Coins; h.InventoryArtifacts = cell.Person.InventoryArtifacts; h.BossDefeated = cell.Person.BossDefeated; }
+                            if (cell.Person != null)
+                            {
+                                h.Health = cell.Person.Health;
+                                h.Coins = cell.Person.Coins;
+                                h.InventoryArtifacts = cell.Person.InventoryArtifacts;
+                                h.BossDefeated = cell.Person.BossDefeated;
+                                h.PortalHistory = cell.Person.PortalHistory ?? new List<int>();
+                            }
                             map[cell.X, cell.Y] = h; heroLoaded = true;
                         }
                         else map[cell.X, cell.Y] = new Field();
                         break;
                     case "Enemy":
-                        var e = new Enemy(cell.X, cell.Y); if (cell.Person != null) { e.Health = cell.Person.Health; }
+                        var e = new Enemy(cell.X, cell.Y);
+                        if (cell.Person != null) e.Health = cell.Person.Health;
                         map[cell.X, cell.Y] = e;
                         break;
                     case "Hunter":
-                        var hn = new Hunter(cell.X, cell.Y); if (cell.Person != null) { hn.Health = cell.Person.Health; }
+                        var hn = new Hunter(cell.X, cell.Y);
+                        if (cell.Person != null) hn.Health = cell.Person.Health;
                         map[cell.X, cell.Y] = hn;
                         break;
                     case "Archer":
-                        var a = new Archer(cell.X, cell.Y); if (cell.Person != null) { a.Health = cell.Person.Health; }
+                        var a = new Archer(cell.X, cell.Y);
+                        if (cell.Person != null) a.Health = cell.Person.Health;
                         map[cell.X, cell.Y] = a;
                         break;
                     case "Ally":
-                        var al = new Ally(cell.X, cell.Y, 1, 0, 0); if (cell.Person != null) { al.Health = cell.Person.Health; }
+                        var al = new Ally(cell.X, cell.Y, 1, 0, 0);
+                        if (cell.Person != null) al.Health = cell.Person.Health;
                         map[cell.X, cell.Y] = al;
                         break;
                     default: map[cell.X, cell.Y] = new Field(); break;
                 }
             }
             if (!heroLoaded) map[12, 12] = new Hero(12, 12);
+
+            IsBossMap = false;
+            CurrentLevelType = LevelType.Normal;
+            CurrentArtifactType = 0;
+            BossTriggered = 0;
+            LevelUpTriggered = false;
         }
     }
 }

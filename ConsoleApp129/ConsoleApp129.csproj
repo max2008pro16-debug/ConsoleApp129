@@ -75,6 +75,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Artifacts.cs" />
     <Compile Include="Service\CharacterInteractionService.cs" />
     <Compile Include="Menus\CharacterMenu.cs" />
     <Compile Include="Core\ConsoleHelper.cs" />
@@ -93,6 +94,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SaveSystem\SaveData.cs" />
     <Compile Include="SaveSystem\SaveServiceFactory.cs" />
+    <Compile Include="Service\StoryService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

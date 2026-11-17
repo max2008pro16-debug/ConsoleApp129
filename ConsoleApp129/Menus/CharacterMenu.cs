@@ -22,7 +22,7 @@ namespace ConsoleApp129.Menus
             {
                 new MenuItem("Показать всех персонажей", ShowCharacters),
                 new MenuItem("Поговорить с персонажем", TalkWithCharacter),
-                new MenuItem("Выбрать тип артефакта", SelectArtifactType), 
+                new MenuItem("Выбрать тип артефакта", SelectArtifactType),
                 new MenuItem("Отдохнуть (+10 HP, ход врагов)", Rest)
             });
         }
@@ -55,7 +55,6 @@ namespace ConsoleApp129.Menus
             _interactionService.TalkTo(characters[index - 1]);
         }
 
-        // Выбор артефакта
         private void SelectArtifactType()
         {
             var hero = _gameService.CurrentMap.GetAllPersons().FirstOrDefault(p => p is Hero) as Hero;
@@ -64,21 +63,23 @@ namespace ConsoleApp129.Menus
             Console.WriteLine("Ваши артефакты в инвентаре:");
             for (int i = 1; i <= 5; i++)
             {
-                Console.WriteLine(string.Format("  [{0}] {1} шт.", i, hero.InventoryArtifacts[i]));
+                Console.ForegroundColor = ArtifactInfo.GetColor(i);
+                Console.Write("  " + ArtifactInfo.GetSymbol(i));
+                Console.ResetColor();
+                Console.WriteLine(string.Format(" [{0}] {1} — {2} шт.  ({3})",
+                    i, ArtifactInfo.GetName(i), hero.InventoryArtifacts[i], ArtifactInfo.GetDescription(i)));
             }
-            Console.WriteLine("\nСейчас выбран для установки: " + hero.SelectedArtifactType);
-            Console.Write("Введите номер артефакта для установки (1-5): ");
+            Console.WriteLine();
+            Console.WriteLine("Сейчас выбран: " + ArtifactInfo.GetName(hero.SelectedArtifactType));
+            Console.Write("Введите номер печати (1-5): ");
 
             int choice;
             if (int.TryParse(Console.ReadLine(), out choice) && choice >= 1 && choice <= 5)
             {
                 hero.SelectedArtifactType = choice;
-                Console.WriteLine("Теперь при нажатии '4' вы будете ставить артефакт " + choice);
+                Console.WriteLine("Теперь клавишей '4' вы ставите: " + ArtifactInfo.GetName(choice));
             }
-            else
-            {
-                Console.WriteLine("Некорректный ввод.");
-            }
+            else Console.WriteLine("Некорректный ввод.");
         }
 
         private void Rest()

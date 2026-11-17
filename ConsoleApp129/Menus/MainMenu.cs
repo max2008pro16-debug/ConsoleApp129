@@ -2,6 +2,7 @@
 using ConsoleApp129.Services;
 using System;
 using System.IO;
+
 namespace ConsoleApp129.Menus
 {
     internal sealed class MainMenu : IMenu
@@ -37,6 +38,7 @@ namespace ConsoleApp129.Menus
         private void StartNewGame()
         {
             _gameService.StartNewGame();
+            StoryService.ShowIntro();                       // ← ДОБАВЛЕНО
             _gameService.RunGameLoop(_characterMenu);
         }
 
@@ -53,7 +55,6 @@ namespace ConsoleApp129.Menus
                 Console.WriteLine("Нет активной игры. Сначала создайте новую игру!");
                 return;
             }
-
             var data = _gameService.CurrentMap.ToSaveData();
             _saveService.Save(data, SavePath);
             Console.WriteLine("Игра сохранена: " + Path.GetFullPath(SavePath));
@@ -72,8 +73,8 @@ namespace ConsoleApp129.Menus
 
         private static void ShowAbout()
         {
-            Console.WriteLine("Учебный проект: меню игры, персонажи и сохранения.");
-            Console.WriteLine("Практическая работа №4, МДК.03.01.");
+            Console.WriteLine("Учебный проект: Хроники Пяти Печатей.");
+            Console.WriteLine("20 концовок по первой и последней печати.");
         }
     }
 }

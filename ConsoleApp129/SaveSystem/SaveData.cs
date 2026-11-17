@@ -15,6 +15,7 @@ namespace ConsoleApp129.SaveSystem
         [DataMember] public int Coins { get; set; }
         [DataMember] public int[] InventoryArtifacts { get; set; }
         [DataMember] public bool[] BossDefeated { get; set; }
+        [DataMember] public List<int> PortalHistory { get; set; } 
     }
 
     [DataContract]

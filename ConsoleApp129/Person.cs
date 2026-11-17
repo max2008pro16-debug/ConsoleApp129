@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace ConsoleApp129
 {
@@ -23,7 +24,6 @@ namespace ConsoleApp129
 
         public override char RenderOnMap() { return '☺'; }
 
-        // БАЗОВЫЙ ВЫВОД (для врагов и союзников) - С УРОНОМ
         public override string ToString()
         {
             return string.Format("{0} (HP: {1}/{2}, Урон: {3})", Name, Health, MaxHealth, Damage);
@@ -38,6 +38,7 @@ namespace ConsoleApp129
 
         public int[] InventoryArtifacts { get; set; }
         public bool[] BossDefeated { get; set; }
+        public List<int> PortalHistory { get; set; } 
 
         public int SelectedArtifactType { get; set; } = 1;
 
@@ -46,10 +47,11 @@ namespace ConsoleApp129
         public int BonusAllyHealth { get; set; } = 0;
         public int BonusAllyDamage { get; set; } = 0;
 
-        public Hero(int x, int y) : base(x, y, "Герой", 100, 0) // Урон 0
+        public Hero(int x, int y) : base(x, y, "Герой", 100, 0)
         {
             InventoryArtifacts = new int[6];
             BossDefeated = new bool[6];
+            PortalHistory = new List<int>();   // ← НОВОЕ
         }
 
         public override char RenderOnMap() { Console.ForegroundColor = ConsoleColor.Yellow; return '☻'; }
